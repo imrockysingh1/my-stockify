@@ -40,6 +40,12 @@ public class UserDTO {
     private Double income;
 
     @NotNull(message = "Password is required")
-    @PasswordValidation(message = "Password must be strong  (A-Z,a-z,0-1,(#,$@%...),8chars")
+    @PasswordValidation(message = "Password must be strong (A-Z, a-z, 0-9, special chars, 8+ chars)")
     private String password;
+
+    // ── NEW FIELDS ───────────────────────────────────────
+    private String fatherName;
+    private String occupation;
+    private String maritalStatus;
+    private Boolean emailVerified;
 }

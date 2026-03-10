@@ -2,10 +2,7 @@ package com.example.stockify.dto;
 
 import com.example.stockify.annotation.AdultValidation;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -14,6 +11,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProfileDTO {
+
     @NotBlank(message = "Username is required")
     private String username;
 
@@ -39,4 +37,10 @@ public class ProfileDTO {
 
     @PositiveOrZero(message = "Income cannot be negative")
     private Double income;
+
+    // ── NEW FIELDS ───────────────────────────────────────
+    private String fatherName;
+    private String occupation;
+    private String maritalStatus;
+    private Boolean emailVerified;
 }
