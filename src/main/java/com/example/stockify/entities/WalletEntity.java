@@ -1,7 +1,6 @@
 package com.example.stockify.entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -22,8 +21,7 @@ public class WalletEntity {
     private String username;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "username", referencedColumnName = "username")
+    @JoinColumn(name = "username", referencedColumnName = "username", insertable = false, updatable = false)
     private UserEntity user;
 
     @Column(name = "amount")

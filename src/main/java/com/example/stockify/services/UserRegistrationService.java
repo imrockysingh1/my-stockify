@@ -42,24 +42,24 @@ public class UserRegistrationService {
         if (userRepository.existsByPhone(request.getPhone()))
             throw new RuntimeException("Phone number already exists");
 
-        // Save user
+        // Save user FIRST
         UserEntity userEntity = modelMapper.map(request, UserEntity.class);
         userEntity.setEmailVerified(false);
 
-        // Generate OTP
         String otp = emailService.generateOtp();
         userEntity.setEmailOtp(otp);
 
-        UserEntity savedEntity = userRepository.save(userEntity);
+        // Must flush to ensure user is in DB before wallet is created
+        UserEntity savedEntity = userRepository.saveAndFlush(userEntity);
 
-        // Create wallet with ₹10,000 virtual balance
+        // Create wallet AFTER user is saved
         WalletEntity wallet = new WalletEntity();
-        wallet.setUsername(savedEntity.getUsername());
-        wallet.setUser(savedEntity);
+        wallet.setUsername(savedEntity.getUsername());  // set ID manually
         wallet.setAmount(10000.0f);
+// DO NOT set user object - let JoinColumn handle it
         walletRepository.save(wallet);
 
-        // Send OTP email (don't fail registration if email fails)
+        // Send OTP email
         try {
             emailService.sendOtpEmail(request.getEmail(), otp);
         } catch (Exception e) {
