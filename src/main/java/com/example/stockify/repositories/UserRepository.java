@@ -2,6 +2,8 @@ package com.example.stockify.repositories;
 
 import com.example.stockify.entities.PortfolioEntity;
 import com.example.stockify.entities.UserEntity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity , String> {
 
-    Optional<Object> findAllByUsername(String username);
+    Optional<Object> findByUsername(String username);
     boolean existsByEmail(String email);
 
     boolean existsByPhone(String phone);
