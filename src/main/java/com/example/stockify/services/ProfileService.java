@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ProfileService {
-
     private final ProfileRepository profileRepository;
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
@@ -30,10 +29,9 @@ public class ProfileService {
         this.walletRepository = walletRepository;
     }
 
-    // GET profile
     public ProfileDTO getUserProfile(String username) {
-        UserEntity data = profileRepository.findById(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found " + username));
+        UserEntity data = profileRepository.findUserWithAddressesAndWallet(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found "+username));
         return modelMapper.map(data, ProfileDTO.class);
     }
 

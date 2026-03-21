@@ -9,24 +9,26 @@ import com.example.stockify.services.JwtService;
 import com.example.stockify.services.PortfolioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.json.JsonMapper;
 
+import javax.management.relation.RelationNotFoundException;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "/api/portfolio")
 public class PortfolioController {
 
     private final PortfolioService portfolioService;
+    private final JsonMapper.Builder builder;
     private final UserRepository userRepository;
     private final PortfolioRepository portfolioRepository;
     private final JwtService jwtService;
 
-    public PortfolioController(PortfolioService portfolioService,
-                               UserRepository userRepository,
-                               PortfolioRepository portfolioRepository,
-                               JwtService jwtService) {
+    public PortfolioController(PortfolioService portfolioService, JsonMapper.Builder builder, UserRepository userRepository, PortfolioRepository portfolioRepository, JwtService jwtService) {
         this.portfolioService = portfolioService;
+        this.builder = builder;
         this.userRepository = userRepository;
         this.portfolioRepository = portfolioRepository;
         this.jwtService = jwtService;
@@ -38,24 +40,34 @@ public class PortfolioController {
             @RequestHeader("Authorization") String authHeader
     ) throws AccessDeniedException {
 
-        String token = authHeader.substring(7);
-        String loggedInUser = jwtService.extractUsername(token);
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new AccessDeniedException("Missing or invalid Authorization header");
+            }
+            String token = authHeader.substring(7);
+            String loggedInUser = jwtService.extractUsername(token);
+            System.out.println("Logged In user " + loggedInUser);
+            System.out.println("username" + username);
 
-        if (!loggedInUser.equals(username)) {
-            throw new AccessDeniedException("You are not authorized to access this portfolio");
+            if (!loggedInUser.equals(username)) {
+                throw new AccessDeniedException("You are not authorized to access this profile");
+            }
+        }catch (Exception e){
+            throw new AccessDeniedException("Invalid or expired token");
         }
 
-        userRepository.findById(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found " + username));
+        {
+            userRepository.findById(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found " + username));
 
-        List<PortfolioDTO> data = portfolioService.getUserPortfolio(username);
+            List<PortfolioDTO> data = portfolioService.getUserPortfolio(username);
 
-        ApiResponse<List<PortfolioDTO>> response =
-                ApiResponse.<List<PortfolioDTO>>builder()
-                        .success(true)
-                        .data(data)
-                        .build();
-
-        return ResponseEntity.ok(response);
+            ApiResponse<List<PortfolioDTO>> response =
+                    ApiResponse.<List<PortfolioDTO>>builder()
+                            .success(true)
+                            .data(data)
+                            .build();
+            return ResponseEntity.ok(response);
+        }
     }
 }

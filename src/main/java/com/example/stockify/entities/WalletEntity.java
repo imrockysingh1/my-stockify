@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 @Entity
 @Table(name = "wallet")
 @Getter
@@ -21,12 +20,14 @@ public class WalletEntity {
     private String username;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username", referencedColumnName = "username", insertable = false, updatable = false)
+    @MapsId
+    @JoinColumn(name = "username")
     private UserEntity user;
 
     @Column(name = "amount")
     @NotNull(message = "Amount should not be blank")
     @PositiveOrZero(message = "Amount cannot be negative")
-    private Float amount;
+    private Double amount;
+
 
 }

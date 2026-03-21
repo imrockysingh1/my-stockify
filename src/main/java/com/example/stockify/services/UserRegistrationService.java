@@ -1,8 +1,10 @@
 package com.example.stockify.services;
 
 import com.example.stockify.dto.UserDTO;
+import com.example.stockify.entities.AddressEntity;
 import com.example.stockify.entities.UserEntity;
 import com.example.stockify.entities.WalletEntity;
+import com.example.stockify.repositories.AddressRepository;
 import com.example.stockify.repositories.UserRepository;
 import com.example.stockify.repositories.WalletRepository;
 import jakarta.validation.Valid;
@@ -10,12 +12,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.DatagramPacket;
+import java.util.List;
+
 @Service
 public class UserRegistrationService {
-
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final WalletRepository walletRepository;
+    private final AddressRepository addressRepository;
     private final EmailService emailService;
 
     public UserRegistrationService(UserRepository userRepository,
@@ -24,6 +29,7 @@ public class UserRegistrationService {
                                    EmailService emailService) {
         this.userRepository = userRepository;
         this.modelMapper = modelMapper;
+        this.addressRepository = addressRepository;
         this.walletRepository = walletRepository;
         this.emailService = emailService;
     }
@@ -65,7 +71,28 @@ public class UserRegistrationService {
         } catch (Exception e) {
             System.out.println("Warning: Email sending failed - " + e.getMessage());
         }
+        if(userRepository.existsByPhone(request.getPhone())){
+            throw new RuntimeException("Phone number Already exists");
+        }
+        UserEntity toSaveEntity = modelMapper.map(request, UserEntity.class);
+        UserEntity savedUser = userRepository.save(toSaveEntity);
+        List<AddressEntity> savedAddress = request.getAddress().stream()
+                .map(addressDTO -> {
+                    AddressEntity addressEntity = modelMapper.map(addressDTO, AddressEntity.class);
 
+                    addressEntity.setUser(toSaveEntity);
+
+                    return addressRepository.save(addressEntity);
+                })
+                .toList();
+        toSaveEntity.setAddresses(savedAddress);
+        UserEntity savedEntity = userRepository.save(toSaveEntity);
+        WalletEntity wallet = new WalletEntity();
+        wallet.setUser(savedUser);
+        wallet.setAmount(10000.0);
+
+        savedUser.setWallet(wallet);
+        userRepository.save(savedUser);
         return modelMapper.map(savedEntity, UserDTO.class);
     }
 }
