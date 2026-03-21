@@ -18,7 +18,7 @@ public class ProfileService {
     }
 
     public ProfileDTO getUserProfile(String username) {
-        UserEntity data = profileRepository.findUserWithAddresses(username)
+        UserEntity data = profileRepository.findUserWithAddressesAndWallet(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found "+username));
         return modelMapper.map(data, ProfileDTO.class);
     }

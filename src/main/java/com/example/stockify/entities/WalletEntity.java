@@ -28,4 +28,6 @@ public class WalletEntity {
     @NotNull(message = "Amount should not be blank")
     @PositiveOrZero(message = "Amount cannot be negative")
     private Double amount;
+
+
 }

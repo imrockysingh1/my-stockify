@@ -81,4 +81,6 @@ public class UserDTO {
 
     @NotEmpty(message = "Address is required")
     private List<AddressDTO> address;
+
+    private WalletDTO wallet;
 }
