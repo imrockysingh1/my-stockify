@@ -1,0 +1,16 @@
+package com.example.stockify.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class LoginRequestDTO {
+
+    @NotBlank(message = "username is required")
+    private String username;
+
+    @NotBlank(message = "password is rrequired")
+    private String password;
+
+
+}
