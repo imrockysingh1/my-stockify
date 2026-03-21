@@ -40,11 +40,20 @@ public class PortfolioController {
             @RequestHeader("Authorization") String authHeader
     ) throws AccessDeniedException {
 
-        String token = authHeader.substring(7);
-        String loggedInUser = jwtService.extractUsername(token);
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new AccessDeniedException("Missing or invalid Authorization header");
+            }
+            String token = authHeader.substring(7);
+            String loggedInUser = jwtService.extractUsername(token);
+            System.out.println("Logged In user " + loggedInUser);
+            System.out.println("username" + username);
 
-        if (!loggedInUser.equals(username)) {
-            throw new AccessDeniedException("You are not authorized to access this profile");
+            if (!loggedInUser.equals(username)) {
+                throw new AccessDeniedException("You are not authorized to access this profile");
+            }
+        }catch (Exception e){
+            throw new AccessDeniedException("Invalid or expired token");
         }
 
         {

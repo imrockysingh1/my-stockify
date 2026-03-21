@@ -3,8 +3,10 @@ package com.example.stockify.services;
 import com.example.stockify.dto.UserDTO;
 import com.example.stockify.entities.AddressEntity;
 import com.example.stockify.entities.UserEntity;
+import com.example.stockify.entities.WalletEntity;
 import com.example.stockify.repositories.AddressRepository;
 import com.example.stockify.repositories.UserRepository;
+import com.example.stockify.repositories.WalletRepository;
 import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -17,10 +19,13 @@ public class UserRegistrationService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final AddressRepository addressRepository;
-    public UserRegistrationService(UserRepository userRepository, ModelMapper modelMapper, AddressRepository addressRepository) {
+    private final WalletRepository walletRepository;
+
+    public UserRegistrationService(UserRepository userRepository, ModelMapper modelMapper, AddressRepository addressRepository, WalletRepository walletRepository) {
         this.userRepository = userRepository;
         this.modelMapper = modelMapper;
         this.addressRepository = addressRepository;
+        this.walletRepository = walletRepository;
     }
 
     public UserDTO userRegistration(@Valid UserDTO request) {
@@ -53,6 +58,12 @@ public class UserRegistrationService {
                 .toList();
         toSaveEntity.setAddresses(savedAddress);
         UserEntity savedEntity = userRepository.save(toSaveEntity);
+        WalletEntity wallet = new WalletEntity();
+        wallet.setUser(savedUser);
+        wallet.setAmount(10000.0);
+
+        savedUser.setWallet(wallet);
+        userRepository.save(savedUser);
         return modelMapper.map(savedEntity, UserDTO.class);
     }
 }

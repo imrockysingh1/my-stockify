@@ -77,4 +77,6 @@ public class ProfileDTO {
 
     @NotEmpty(message = "Address is required")
     private List<AddressDTO> addresses;
+
+    private WalletDTO wallet;
 }

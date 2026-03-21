@@ -14,8 +14,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class WalletDTO {
 
-    @NotBlank(message = "Username is required")
-    private String username;
+//    @NotBlank(message = "Username is required")
+//    private String username;
 
     @NotNull(message = "Amount is required")
     @PositiveOrZero(message = "Amount cannot be negative")

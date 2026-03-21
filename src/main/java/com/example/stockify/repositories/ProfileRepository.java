@@ -11,6 +11,6 @@ import java.util.Optional;
 
 @Repository
 public interface ProfileRepository extends JpaRepository<UserEntity , String> {
-    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.addresses WHERE u.username = :username")
-    Optional<UserEntity> findUserWithAddresses(@Param("username") String username);
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.addresses LEFT JOIN FETCH u.wallet WHERE u.username = :username")
+    Optional<UserEntity> findUserWithAddressesAndWallet(@Param("username") String username);
 }
