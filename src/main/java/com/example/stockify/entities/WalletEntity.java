@@ -20,7 +20,7 @@ public class WalletEntity {
     private String username;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
+//    @MapsId
     @JoinColumn(name = "username")
     private UserEntity user;
 

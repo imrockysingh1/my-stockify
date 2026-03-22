@@ -109,6 +109,15 @@ public class UserEntity {
                                    "one lowercase letter, one number, and one special character.")
     private String password;
 
+    @Column(name = "marital_status", length = 20)
+    private String maritalStatus;
+
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "email_otp", length = 6)
+    private String emailOtp;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AddressEntity> addresses;
 

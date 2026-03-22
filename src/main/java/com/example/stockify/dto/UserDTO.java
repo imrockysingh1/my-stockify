@@ -83,4 +83,7 @@ public class UserDTO {
     private List<AddressDTO> address;
 
     private WalletDTO wallet;
+
+    private String maritalStatus;
+    private Boolean emailVerified;
 }

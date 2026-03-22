@@ -1,5 +1,6 @@
 package com.example.stockify.services;
-
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 import com.example.stockify.dto.UserDTO;
 import com.example.stockify.entities.AddressEntity;
 import com.example.stockify.entities.UserEntity;
@@ -10,8 +11,9 @@ import com.example.stockify.repositories.WalletRepository;
 import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.net.DatagramPacket;
+//import java.net.DatagramPacket;
 import java.util.List;
 
 @Service
@@ -20,14 +22,16 @@ public class UserRegistrationService {
     private final ModelMapper modelMapper;
     private final AddressRepository addressRepository;
     private final WalletRepository walletRepository;
+    private final EmailService emailService;
 
-    public UserRegistrationService(UserRepository userRepository, ModelMapper modelMapper, AddressRepository addressRepository, WalletRepository walletRepository) {
+    public UserRegistrationService(UserRepository userRepository, ModelMapper modelMapper, AddressRepository addressRepository, WalletRepository walletRepository,EmailService emailService) {
         this.userRepository = userRepository;
         this.modelMapper = modelMapper;
         this.addressRepository = addressRepository;
         this.walletRepository = walletRepository;
+        this.emailService = emailService;
     }
-
+    @Transactional
     public UserDTO userRegistration(@Valid UserDTO request) {
 
         if(userRepository.existsById(request.getUsername())){
@@ -45,25 +49,40 @@ public class UserRegistrationService {
         if(userRepository.existsByPhone(request.getPhone())){
             throw new RuntimeException("Phone number Already exists");
         }
-        UserEntity toSaveEntity = modelMapper.map(request, UserEntity.class);
-        UserEntity savedUser = userRepository.save(toSaveEntity);
-        List<AddressEntity> savedAddress = request.getAddress().stream()
-                .map(addressDTO -> {
-                    AddressEntity addressEntity = modelMapper.map(addressDTO, AddressEntity.class);
+        UserEntity userEntity = modelMapper.map(request, UserEntity.class);
+        userEntity.setEmailVerified(false);
+        if (request.getAddress() != null) {
+            userEntity.setAddresses(new ArrayList<>());
+        }
+        String otp = emailService.generateOtp();
+        userEntity.setEmailOtp(otp);
 
-                    addressEntity.setUser(toSaveEntity);
+        UserEntity savedUser = userRepository.saveAndFlush(userEntity);
+        if (request.getAddress() != null) {
+            List<AddressEntity> savedAddresses = request.getAddress().stream()
+                    .map(addressDTO -> {
+                        AddressEntity addressEntity = modelMapper.map(addressDTO, AddressEntity.class);
+                        addressEntity.setUser(savedUser);
+                        return addressRepository.save(addressEntity);
+                    })
+                    .collect(Collectors.toCollection(ArrayList::new));
+            savedUser.setAddresses(savedAddresses);
+//            userRepository.save(savedUser);
+        }
 
-                    return addressRepository.save(addressEntity);
-                })
-                .toList();
-        toSaveEntity.setAddresses(savedAddress);
-        UserEntity savedEntity = userRepository.save(toSaveEntity);
+        // Create wallet AFTER user is saved (MapsId — set user, not username)
         WalletEntity wallet = new WalletEntity();
-        wallet.setUser(savedUser);
+        wallet.setUsername(savedUser.getUsername());
         wallet.setAmount(10000.0);
+        walletRepository.save(wallet);
 
-        savedUser.setWallet(wallet);
-        userRepository.save(savedUser);
-        return modelMapper.map(savedEntity, UserDTO.class);
+        // Send OTP email (non-blocking)
+        try {
+            emailService.sendOtpEmail(request.getEmail(), otp);
+        } catch (Exception e) {
+            System.out.println("Warning: Email sending failed - " + e.getMessage());
+        }
+
+        return modelMapper.map(savedUser, UserDTO.class);
     }
 }
