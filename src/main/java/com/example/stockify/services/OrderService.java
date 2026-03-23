@@ -4,15 +4,10 @@ import com.example.stockify.dto.BuyOrderRequestDTO;
 import com.example.stockify.dto.StockResponseDTO;
 import com.example.stockify.entities.*;
 import com.example.stockify.enums.TransactionType;
-//import com.example.stockify.helpers.Helper.*;
 import com.example.stockify.repositories.*;
 import jakarta.transaction.Transactional;
-import org.antlr.v4.runtime.atn.SemanticContext;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.jaxb.SpringDataJaxb;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-//import com.example.stockify.helpers.Helper.*;
 
 @Service
 public class OrderService {
@@ -30,7 +25,8 @@ public class OrderService {
                         PortfolioRepository portfolioRepository,
                         OrderRepository orderRepository,
                         StockService stockService,
-                        TransactionService transactionService, ModelMapper modelMapper) {
+                        TransactionService transactionService,
+                        ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
         this.portfolioRepository = portfolioRepository;
@@ -38,11 +34,18 @@ public class OrderService {
         this.stockService = stockService;
         this.transactionService = transactionService;
         this.modelMapper = modelMapper;
-
     }
 
     @Transactional
     public BuyOrderRequestDTO buyStock(String username, BuyOrderRequestDTO request) {
+
+        if (request.getQuantity() <= 0) {
+            throw new RuntimeException("Quantity must be greater than 0");
+        }
+
+        if ("LIMIT".equalsIgnoreCase(request.getOrderType()) && request.getPrice() <= 0) {
+            throw new RuntimeException("Price must be greater than 0 for LIMIT orders");
+        }
 
         UserEntity user = userRepository.findById(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -52,31 +55,39 @@ public class OrderService {
 
         StockResponseDTO stock = stockService.getStock(request.getSymbol(), "1d", "1m");
 
-        double currentPrice = stock.getMeta().getPrice();
+        if (stock == null || stock.getMeta() == null) {
+            throw new RuntimeException("Stock data unavailable");
+        }
 
+        double currentPrice = stock.getMeta().getPrice();
         double executionPrice;
 
         if ("MARKET".equalsIgnoreCase(request.getOrderType())) {
             executionPrice = currentPrice;
-        } else {
-            if ("LIMIT".equalsIgnoreCase(request.getOrderType()) && currentPrice > request.getPrice()) {
+        }
 
-                OrderEntity toSaveOrder = modelMapper.map(request , OrderEntity.class);
-                OrderEntity savedOrder = orderRepository.save((toSaveOrder));
+        else if ("LIMIT".equalsIgnoreCase(request.getOrderType())) {
 
-//                OrderEntity order = new OrderEntity();
-//                order.setUsers(user);
-//                order.setSymbol(request.getSymbol());
-//                order.setQuantity(request.getQuantity());
-//                order.setOrderType(orderType);
-//                order.setPrice(limitPrice);
-//                order.setStatus("PENDING");
+            if (currentPrice > request.getPrice()) {
 
-//                orderRepository.save(order);
+                OrderEntity pendingOrder = new OrderEntity();
+                pendingOrder.setUsers(user);
+                pendingOrder.setSymbol(request.getSymbol());
+                pendingOrder.setQuantity(request.getQuantity());
+                pendingOrder.setOrderType(request.getOrderType());
+                pendingOrder.setPrice(request.getPrice());
+                pendingOrder.setStatus("PENDING");
 
-                return modelMapper.map(savedOrder,BuyOrderRequestDTO.class); //till here
+                OrderEntity savedOrder = orderRepository.save(pendingOrder);
+
+                return modelMapper.map(savedOrder, BuyOrderRequestDTO.class);
             }
-            executionPrice = request.getPrice();
+
+            executionPrice = Math.min(currentPrice, request.getPrice());
+        }
+
+        else {
+            throw new RuntimeException("Invalid order type");
         }
 
         double totalAmount = executionPrice * request.getQuantity();
@@ -85,11 +96,10 @@ public class OrderService {
             throw new RuntimeException("Insufficient balance");
         }
 
-        // ✅ Deduct wallet
         wallet.setAmount(wallet.getAmount() - totalAmount);
+        walletRepository.save(wallet);
 
         updatePortfolio(user, request.getSymbol(), request.getQuantity(), executionPrice);
-
 
         OrderEntity order = new OrderEntity();
         order.setUsers(user);
@@ -99,9 +109,8 @@ public class OrderService {
         order.setPrice(executionPrice);
         order.setStatus("EXECUTED");
 
-        orderRepository.save(order);
+        OrderEntity savedOrder = orderRepository.save(order);
 
-        // ✅ Save Transaction
         transactionService.createTransaction(
                 user,
                 request.getSymbol(),
@@ -109,7 +118,10 @@ public class OrderService {
                 executionPrice,
                 TransactionType.BUY
         );
-    return request;}
+
+        return modelMapper.map(savedOrder, BuyOrderRequestDTO.class);
+    }
+
     public void updatePortfolio(UserEntity user,
                                 String stock,
                                 int qty,
@@ -130,6 +142,8 @@ public class OrderService {
             portfolio.setQuantity(totalQty);
             portfolio.setAveragePrice((float) newAvg);
             portfolio.setInvestment((float) (totalQty * newAvg));
+
+            portfolioRepository.save(portfolio);
 
         } else {
 
