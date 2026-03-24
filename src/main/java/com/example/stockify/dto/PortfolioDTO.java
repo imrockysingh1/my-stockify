@@ -30,4 +30,11 @@ public class PortfolioDTO {
 
     @PositiveOrZero(message = "Investment cannot be negative")
     private Float investment;
+
+    private Double currentPrice;
+    private Double currentValue;
+    private Double profitLoss;
+    private Double profitLossPercent;
+    private Double oneDayReturn;
+    private Double oneDayReturnPercent;
 }

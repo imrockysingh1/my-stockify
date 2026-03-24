@@ -37,6 +37,14 @@ public class PortfolioEntity {
     @PositiveOrZero(message = "Investment cannot be negative")
     private Float investment;
 
+    @PrePersist
+    @PreUpdate
+    public void calculateInvestment() {
+        if (averagePrice != null && quantity != null) {
+            this.investment = averagePrice * quantity;
+        }
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "username", referencedColumnName = "username")
     private UserEntity user;

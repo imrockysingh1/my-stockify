@@ -2,6 +2,7 @@ package com.example.stockify.controllers;
 
 import com.example.stockify.advice.ApiResponse;
 import com.example.stockify.dto.PortfolioDTO;
+import com.example.stockify.dto.PortfolioSummaryDTO;
 import com.example.stockify.exception.ResourceNotFoundException;
 import com.example.stockify.repositories.PortfolioRepository;
 import com.example.stockify.repositories.UserRepository;
@@ -35,13 +36,13 @@ public class PortfolioController {
     }
 
     @GetMapping(path = "/{username}")
-    public ResponseEntity<ApiResponse<List<PortfolioDTO>>> getPortfolio(
+    public ResponseEntity<ApiResponse<PortfolioSummaryDTO>> getPortfolio(
             @PathVariable String username,
             @RequestHeader("Authorization") String authHeader
     ) throws AccessDeniedException {
 
         try {
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            if (authHeader == null || !authHeader.startsWith("Brearer ")) {
                 throw new AccessDeniedException("Missing or invalid Authorization header");
             }
             String token = authHeader.substring(7);
@@ -60,10 +61,10 @@ public class PortfolioController {
             userRepository.findById(username)
                     .orElseThrow(() -> new ResourceNotFoundException("User not found " + username));
 
-            List<PortfolioDTO> data = portfolioService.getUserPortfolio(username);
+            PortfolioSummaryDTO data = portfolioService.getUserPortfolio(username);
 
-            ApiResponse<List<PortfolioDTO>> response =
-                    ApiResponse.<List<PortfolioDTO>>builder()
+            ApiResponse<PortfolioSummaryDTO> response =
+                    ApiResponse.<PortfolioSummaryDTO>builder()
                             .success(true)
                             .data(data)
                             .build();

@@ -141,7 +141,7 @@ public class OrderService {
 
             portfolio.setQuantity(totalQty);
             portfolio.setAveragePrice((float) newAvg);
-            portfolio.setInvestment((float) (totalQty * newAvg));
+//            portfolio.setInvestment((float) (totalQty * newAvg));
 
             portfolioRepository.save(portfolio);
 
@@ -153,7 +153,7 @@ public class OrderService {
             newPortfolio.setStockName(stock);
             newPortfolio.setQuantity(qty);
             newPortfolio.setAveragePrice((float) price);
-            newPortfolio.setInvestment((float) (qty * price));
+//            newPortfolio.setInvestment((float) (qty * price));
 
             portfolioRepository.save(newPortfolio);
         }
