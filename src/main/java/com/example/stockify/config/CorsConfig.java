@@ -17,6 +17,7 @@ public class CorsConfig {
                         .allowedOriginPatterns("*")  // ✅ allow all origins for now
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
+                        .exposedHeaders("Authorization")
                         .allowCredentials(true);
             }
         };

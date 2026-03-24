@@ -76,11 +76,14 @@ public class UserDTO {
     private String fatherName;
 
     @NotNull(message = "Password is required")
-    @PasswordValidation(message = "Password must be strong  (A-Z,a-z,0-1,(#,$@%...),8chars")
+    @PasswordValidation(message = "Password must be strong (A-Z, a-z, 0-9, special chars, 8+ chars)")
     private String password;
 
     @NotEmpty(message = "Address is required")
     private List<AddressDTO> address;
 
     private WalletDTO wallet;
+
+    private String maritalStatus;
+    private Boolean emailVerified;
 }

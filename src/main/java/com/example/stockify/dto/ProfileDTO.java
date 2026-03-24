@@ -15,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProfileDTO {
+
     @NotBlank(message = "Username is required")
     private String username;
 
@@ -52,7 +53,6 @@ public class ProfileDTO {
     @NotBlank(message = "PAN is required")
     private String pan;
 
-    @Positive(message = "Income should not be negative")
     @NotBlank(message = "Income range is required")
     @Pattern(
             regexp = "^(Upto 1L|1-5L|5-10L|10-25L|25-50L|50L-1Cr)$",

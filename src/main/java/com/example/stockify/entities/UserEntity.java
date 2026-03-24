@@ -4,11 +4,7 @@ import com.example.stockify.annotation.AdultValidation;
 import com.example.stockify.annotation.PasswordValidation;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.validator.constraints.Length;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,8 +30,7 @@ public class UserEntity {
     @NotNull(message = "username is required")
     private String username;
 
-
-    @Column(name = "name" , length = 30)
+    @Column(name = "name", length = 30)
     private String name;
 
     @Column(name = "email")
@@ -44,10 +39,7 @@ public class UserEntity {
 
     @Column(name = "phone")
     @NotBlank(message = "Phone number is required")
-    @Pattern(
-            regexp = "^[0-9]{10}$",
-            message = "Phone number must be 10 digits"
-    )
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
     private String phone;
 
     @Column(name = "dob")
@@ -74,8 +66,7 @@ public class UserEntity {
     @Pattern(regexp = "^[0-9]{12}$", message = "Aadhar must be 12 digits")
     private String aadhar;
 
-
-    @Column(name = "pan" , length = 10)
+    @Column(name = "pan", length = 10)
     @NotBlank(message = "PAN is required")
     private String pan;
 
@@ -105,10 +96,17 @@ public class UserEntity {
     private String fatherName;
 
     @Column(name = "password")
-    @PasswordValidation( message = "Password must be at least 8 characters long and include at least one uppercase letter, " +
-                                   "one lowercase letter, one number, and one special character.")
+    @PasswordValidation(message = "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.")
     private String password;
 
+    @Column(name = "marital_status", length = 20)
+    private String maritalStatus;
+
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "email_otp", length = 6)
+    private String emailOtp;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AddressEntity> addresses;
 
