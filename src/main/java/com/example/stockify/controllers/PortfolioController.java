@@ -9,6 +9,7 @@ import com.example.stockify.repositories.UserRepository;
 import com.example.stockify.services.JwtService;
 import com.example.stockify.services.PortfolioService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -42,17 +43,27 @@ public class PortfolioController {
     ) throws AccessDeniedException {
 
         try {
-            if (authHeader == null || !authHeader.startsWith("Brearer ")) {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 throw new AccessDeniedException("Missing or invalid Authorization header");
             }
-            String token = authHeader.substring(7);
-            String loggedInUser = jwtService.extractUsername(token);
-            System.out.println("Logged In user " + loggedInUser);
-            System.out.println("username" + username);
+//            String token = authHeader.substring(7);
+//            String loggedInUser = jwtService.extractUsername(token);
+//            System.out.println("Logged In user " + loggedInUser);
+//            System.out.println("username" + username);
+//            if (!loggedInUser.equals(username)) {
+//                throw new AccessDeniedException("You are not authorized to access this profile");
+//            }
+
+            String loggedInUser = (String) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal();
 
             if (!loggedInUser.equals(username)) {
-                throw new AccessDeniedException("You are not authorized to access this profile");
+                throw new AccessDeniedException("You are not authorized");
             }
+
+
         }catch (Exception e){
             throw new AccessDeniedException("Invalid or expired token");
         }
@@ -72,3 +83,4 @@ public class PortfolioController {
         }
     }
 }
+

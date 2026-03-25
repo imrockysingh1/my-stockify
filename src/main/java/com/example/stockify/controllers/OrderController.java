@@ -6,6 +6,7 @@ import com.example.stockify.dto.UserDTO;
 import com.example.stockify.services.JwtService;
 import com.example.stockify.services.OrderService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
@@ -29,11 +30,19 @@ public class OrderController {
             @RequestBody BuyOrderRequestDTO request,
             @RequestHeader("Authorization") String authHeader
     ) throws AccessDeniedException {
-        String token = authHeader.substring(7);
-        String loggedInUser = jwtService.extractUsername(token);
+//        String token = authHeader.substring(7);
+//        String loggedInUser = jwtService.extractUsername(token);
+//
+//        if (!loggedInUser.equals(username)) {
+//            throw new AccessDeniedException("You are not authorized to access this profile");
+//        }
+        String loggedInUser = (String) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
         if (!loggedInUser.equals(username)) {
-            throw new AccessDeniedException("You are not authorized to access this profile");
+            throw new AccessDeniedException("You are not authorized");
         }
 
 //        orderService.buyStock(
