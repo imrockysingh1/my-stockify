@@ -1,6 +1,7 @@
 package com.example.stockify.services;
 
 import com.example.stockify.entities.OrderEntity;
+import com.example.stockify.entities.WalletEntity;
 import com.example.stockify.enums.TransactionType;
 import com.example.stockify.repositories.OrderRepository;
 import com.example.stockify.repositories.WalletRepository;
@@ -54,7 +55,9 @@ public class OrderSchedulerService {
                     double executionPrice = currentPrice;
                     double totalAmount = executionPrice * order.getQuantity();
 
-                    var wallet = walletRepository.findById(order.getUsers().getUsername())
+//                    var wallet = walletRepository.findById(order.getUsers().getUsername())
+//                            .orElseThrow();
+                    WalletEntity wallet = walletRepository.findById(order.getUsers().getUsername())
                             .orElseThrow();
 
                     // Check balance

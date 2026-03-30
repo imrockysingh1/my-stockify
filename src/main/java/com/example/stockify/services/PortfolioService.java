@@ -41,22 +41,19 @@ public class PortfolioService {
         userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
 
-        List<PortfolioEntity> portfolioEntities = portfolioRepository.findByUserUsername(username);
+        List<PortfolioDTO> stocks = portfolioRepository.findByUserUsername(username);
 
         Map<String, StockResponseDTO> stockCache = new HashMap<>();
 
-        List<PortfolioDTO> stocks = portfolioEntities
+        List<PortfolioDTO> stocksFetched = stocks
                                         .stream()
-                                        .map(entity -> {
+                                        .map(dto-> {
 
-            PortfolioDTO dto = modelMapper.map(entity, PortfolioDTO.class);
-            dto.setUsername(entity.getUser().getUsername());
-
-            float totalInvestment = entity.getInvestment();
-            int quantity = entity.getQuantity();
+            float totalInvestment = dto.getInvestment();
+            int quantity = dto.getQuantity();
 
             StockResponseDTO stock = stockCache.computeIfAbsent(
-                    entity.getStockName(),
+                    dto.getStockName(),
                     s -> stockService.getStock(s, "1d", "1m")
             );
 
@@ -81,12 +78,12 @@ public class PortfolioService {
             return dto;
 
         }).toList();
-
-        double totalInvestment = stocks.stream().mapToDouble(PortfolioDTO::getInvestment).sum();
-        double totalCurrentValue = stocks.stream().mapToDouble(PortfolioDTO::getCurrentValue).sum();
+//        String username = stocks.stream().mapToDouble(PortfolioDTO::getUser).sum();
+        double totalInvestment = stocksFetched.stream().mapToDouble(PortfolioDTO::getInvestment).sum();
+        double totalCurrentValue = stocksFetched.stream().mapToDouble(PortfolioDTO::getCurrentValue).sum();
         double totalProfitLoss = totalCurrentValue - totalInvestment;
         double totalProfitLossPercent = (totalProfitLoss / totalInvestment) * 100;
-        double totalOneDayReturn = stocks.stream().mapToDouble(PortfolioDTO::getOneDayReturn).sum();
+        double totalOneDayReturn = stocksFetched.stream().mapToDouble(PortfolioDTO::getOneDayReturn).sum();
         double totalOneDayReturnPercent = (totalOneDayReturn / totalInvestment) * 100;
 
         return new PortfolioSummaryDTO(
@@ -96,7 +93,7 @@ public class PortfolioService {
                 totalProfitLossPercent,
                 totalOneDayReturn,
                 totalOneDayReturnPercent,
-                stocks
+                stocksFetched
         );
     }
 }

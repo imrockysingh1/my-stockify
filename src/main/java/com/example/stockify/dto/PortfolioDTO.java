@@ -1,5 +1,6 @@
 package com.example.stockify.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,8 +13,10 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PortfolioDTO {
 
+    @JsonIgnore
     private Integer id;
 
+    @JsonIgnore
     @NotBlank(message = "Username is required")
     private String username;
 
@@ -37,4 +40,12 @@ public class PortfolioDTO {
     private Double profitLossPercent;
     private Double oneDayReturn;
     private Double oneDayReturnPercent;
+
+
+    public PortfolioDTO(String stockName, Float averagePrice, Integer quantity, Float investment) {
+        this.stockName = stockName;
+        this.averagePrice = averagePrice;
+        this.quantity = quantity;
+        this.investment = investment;
+    }
 }
