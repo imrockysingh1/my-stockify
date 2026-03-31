@@ -1,5 +1,6 @@
 package com.example.stockify.advice;
 
+import com.example.stockify.exception.InsufficientBalanceException;
 import com.example.stockify.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +48,16 @@ public class GlobalExceptionHandler {
         ApiError apiError = ApiError
                 .builder().status(HttpStatus.BAD_REQUEST)
                 .message("Input Validation failed\n"+errors)
+                .build();
+
+        return buildApiResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<ApiResponse<?>> handleInsufficientBalance(InsufficientBalanceException e) {
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.PAYMENT_REQUIRED)
+                .message(e.getMessage())
                 .build();
 
         return buildApiResponseEntity(apiError);

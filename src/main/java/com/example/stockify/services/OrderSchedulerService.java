@@ -19,23 +19,28 @@ public class OrderSchedulerService {
     private final WalletRepository walletRepository;
     private final OrderService orderService;
     private final TransactionService transactionService;
+    private final MarketTimeService marketTimeService;
 
     public OrderSchedulerService(OrderRepository orderRepository,
                                  StockService stockService,
                                  WalletRepository walletRepository,
                                  OrderService orderService,
-                                 TransactionService transactionService) {
+                                 TransactionService transactionService, MarketTimeService marketTimeService) {
         this.orderRepository = orderRepository;
         this.stockService = stockService;
         this.walletRepository = walletRepository;
         this.orderService = orderService;
         this.transactionService = transactionService;
+        this.marketTimeService = marketTimeService;
     }
 
     // Runs every 10 seconds
     @Scheduled(fixedRate = 10000)
     @Transactional
     public void processPendingOrders() {
+        if (!marketTimeService.isMarketOpen()) {
+            return;
+        }
 
         List<OrderEntity> pendingOrders = orderRepository.findByStatus("PENDING");
 
@@ -55,8 +60,7 @@ public class OrderSchedulerService {
                     double executionPrice = currentPrice;
                     double totalAmount = executionPrice * order.getQuantity();
 
-//                    var wallet = walletRepository.findById(order.getUsers().getUsername())
-//                            .orElseThrow();
+
                     WalletEntity wallet = walletRepository.findById(order.getUsers().getUsername())
                             .orElseThrow();
 

@@ -8,5 +8,6 @@ public class BuyOrderRequestDTO {
     private String symbol;
     private int quantity;
     private String orderType; // MARKET / LIMIT
-    private Double price; // optional
+    private Double price;
+    private String status;
 }
