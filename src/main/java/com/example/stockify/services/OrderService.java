@@ -1,6 +1,7 @@
 package com.example.stockify.services;
 
 import com.example.stockify.dto.BuyOrderRequestDTO;
+import com.example.stockify.dto.OrderListDTO;
 import com.example.stockify.dto.StockResponseDTO;
 import com.example.stockify.entities.*;
 import com.example.stockify.enums.TransactionType;
@@ -9,6 +10,8 @@ import com.example.stockify.repositories.*;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class OrderService {
@@ -145,5 +148,35 @@ public class OrderService {
             newPortfolio.setAveragePrice((float) price);
             portfolioRepository.save(newPortfolio);
         }
+    }
+
+    public OrderListDTO getOrders(String username, String orderType) {
+        List<OrderEntity> orders;
+        if(orderType.equalsIgnoreCase("ALL")){
+            orders = orderRepository.findByUsersUsername(username);
+
+        }
+        else if(orderType.equalsIgnoreCase("EXECUTED")){
+            orders = orderRepository.findByUsersUsernameAndStatus(username,"EXECUTED");
+        }
+        else{
+            orders = orderRepository.findByUsersUsernameAndStatus(username,"PENDING");
+        }
+        List<BuyOrderRequestDTO> ordersDTO =  orders.stream()
+                .map(order -> modelMapper.map(order, BuyOrderRequestDTO.class))
+                .toList();
+
+        long totalOrders = orderRepository.countByUsers_Username(username);
+        long pendingOrders = orderRepository.countByUsers_UsernameAndStatus(username , "PENDING");
+        long executedOrders = orderRepository.countByUsers_UsernameAndStatus(username, "EXECUTED");
+
+        return OrderListDTO.builder()
+                .orders(ordersDTO)
+                .totalOrders(totalOrders)
+                .pendingOrders(pendingOrders)
+                .executedOrders(executedOrders)
+                .build();
+
+
     }
 }
