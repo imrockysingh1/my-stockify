@@ -40,7 +40,7 @@ public class OrderSchedulerService {
     }
 
     // Runs every 10 seconds
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 1000000)
     @Transactional
     public void processPendingOrders() {
         if (!marketTimeService.isMarketOpen()) {
