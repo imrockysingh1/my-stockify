@@ -2,6 +2,8 @@ package com.example.stockify.advice;
 
 import com.example.stockify.exception.InsufficientBalanceException;
 import com.example.stockify.exception.ResourceNotFoundException;
+import com.example.stockify.exception.StockDataNotFoundException;
+import com.example.stockify.exception.WalletNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -57,6 +59,26 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleInsufficientBalance(InsufficientBalanceException e) {
         ApiError apiError = ApiError.builder()
                 .status(HttpStatus.PAYMENT_REQUIRED)
+                .message(e.getMessage())
+                .build();
+
+        return buildApiResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(WalletNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleWalletNotFoundException(WalletNotFoundException e){
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.NOT_FOUND)
+                .message(e.getMessage())
+                .build();
+
+        return buildApiResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(StockDataNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleStockDataNotFoundException(WalletNotFoundException e){
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.NOT_FOUND)
                 .message(e.getMessage())
                 .build();
 
