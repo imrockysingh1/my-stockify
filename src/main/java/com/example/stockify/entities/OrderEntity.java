@@ -1,5 +1,6 @@
 package com.example.stockify.entities;
 
+import com.example.stockify.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,9 @@ public class OrderEntity {
     private String orderType;
     private Double price;
     private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private TransactionType type;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="username" , referencedColumnName = "username")

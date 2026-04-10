@@ -58,12 +58,6 @@ public class OrderController {
             @RequestBody BuyOrderRequestDTO request,
             @RequestHeader("Authorization") String authHeader
     ) throws AccessDeniedException {
-//        String token = authHeader.substring(7);
-//        String loggedInUser = jwtService.extractUsername(token);
-//
-//        if (!loggedInUser.equals(username)) {
-//            throw new AccessDeniedException("You are not authorized to access this profile");
-//        }
         String loggedInUser = (String) SecurityContextHolder
                 .getContext()
                 .getAuthentication()
@@ -72,20 +66,7 @@ public class OrderController {
         if (!loggedInUser.equals(username)) {
             throw new AccessDeniedException("You are not authorized");
         }
-
-//        orderService.buyStock(
-//                username,
-//                request.getSymbol(),
-//                request.getQuantity(),
-//                request.getOrderType(),
-//                request.getPrice()
-//        );
-
-        BuyOrderRequestDTO savedOrder =  orderService.buyStock(
-                username,
-                request
-        );
-
+        BuyOrderRequestDTO savedOrder =  orderService.buyStock(username,request);
         ApiResponse<BuyOrderRequestDTO> response =
                 ApiResponse.<BuyOrderRequestDTO>builder()
                         .success(true).
@@ -94,6 +75,31 @@ public class OrderController {
 
         return ResponseEntity.ok(response);
 
-//        return ResponseEntity.ok("Order placed successfully");
+    }
+
+    @PostMapping("/sell")
+    public ResponseEntity<ApiResponse<BuyOrderRequestDTO>> sellStock(
+            @RequestParam String username ,
+            @RequestBody BuyOrderRequestDTO request,
+            @RequestHeader("Authorization") String authHeader
+    )throws AccessDeniedException{
+        String loggedInUser = (String) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if(!loggedInUser.equals(username))
+            throw new AccessDeniedException(("You are not Authenticated "));
+
+        BuyOrderRequestDTO savedOrders = orderService.sellStock(username , request);
+        ApiResponse<BuyOrderRequestDTO> response =
+                ApiResponse.<BuyOrderRequestDTO>builder()
+                        .success(true).
+                        data(savedOrders)
+                        .build();
+
+        return ResponseEntity.ok(response);
+
+
     }
 }

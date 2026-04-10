@@ -6,9 +6,13 @@ import com.example.stockify.dto.StockResponseDTO;
 import com.example.stockify.entities.*;
 import com.example.stockify.enums.TransactionType;
 import com.example.stockify.exception.InsufficientBalanceException;
+import com.example.stockify.exception.StockDataNotFoundException;
+import com.example.stockify.exception.WalletNotFoundException;
 import com.example.stockify.repositories.*;
+import io.jsonwebtoken.RequiredTypeException;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.internal.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,45 +46,113 @@ public class OrderService {
         this.modelMapper = modelMapper;
         this.marketTimeService = marketTimeService;
     }
-
     @Transactional
-    public BuyOrderRequestDTO buyStock(String username, BuyOrderRequestDTO request) {
+    public BuyOrderRequestDTO sellStock(String username , BuyOrderRequestDTO request){
+        if(request.getQuantity() <= 0 )
+            throw new RuntimeException(("Quantity must be greater than 0 "));
 
-        if (request.getQuantity() <= 0) {
-            throw new RuntimeException("Quantity must be greater than 0");
-        }
-
-        if ("LIMIT".equalsIgnoreCase(request.getOrderType()) && request.getPrice() <= 0) {
+        if("LIMIT".equalsIgnoreCase(request.getOrderType()) && request.getPrice() <= 0)
             throw new RuntimeException("Price must be greater than 0 for LIMIT orders");
-        }
 
-        UserEntity user = userRepository.findById(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+        UserEntity user = userRepository
+                .findById(username).orElseThrow(() -> new RuntimeException("user not found"));
         WalletEntity wallet = walletRepository.findById(username)
-                .orElseThrow(() -> new RuntimeException("Wallet not found"));
-
+                .orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
+        PortfolioEntity portfolio = portfolioRepository.findByUserAndStockName(user, request.getSymbol())
+                .orElse(null);
+        if(portfolio == null)
+            throw new RuntimeException("No stocks found");
         StockResponseDTO stock = stockService.getStock(request.getSymbol(), "1d", "1m");
 
-        if (stock == null || stock.getMeta() == null) {
-            throw new RuntimeException("Stock data unavailable");
-        }
+        if(stock ==null || stock.getMeta() ==null)
+            throw new RequiredTypeException("Stock data Unavailable");
 
         double currentPrice = stock.getMeta().getPrice();
-        double executionPrice;
+        double executionPrice ;
         String orderStatus;
 
         boolean marketOpen = marketTimeService.isMarketOpen();
 
-        if ("MARKET".equalsIgnoreCase(request.getOrderType())) {
-            if (marketOpen) {
+        if("MARKET".equalsIgnoreCase(request.getOrderType())){
+//            if(marketOpen)
+            if (true)
                 orderStatus = "EXECUTED";
-                executionPrice = currentPrice;
-            } else {
+            else
                 orderStatus = "PENDING";
-                executionPrice = currentPrice; // reserve funds at current price
+            executionPrice = currentPrice;
+        }
+        else if("LIMIT".equalsIgnoreCase(request.getOrderType())){
+            if(!marketOpen || currentPrice > request.getPrice()){
+                orderStatus = "PENDING";
+                executionPrice = request.getPrice();
             }
-        } else if ("LIMIT".equalsIgnoreCase(request.getOrderType())) {
+            else {
+                orderStatus ="EXECUTED";
+                executionPrice = Math.min(currentPrice , request.getPrice());
+            }
+        }
+        else{
+            throw new RequiredTypeException("Invalid order type");
+        }
+
+        double totalAmount = executionPrice*request.getQuantity();
+        if(portfolio.getQuantity() < request.getQuantity())
+            throw new InsufficientBalanceException("Less quantity available");
+
+        wallet.setAmount(wallet.getAmount() + totalAmount);
+        walletRepository.save(wallet);
+
+        if ("EXECUTED".equals(orderStatus)) {
+            updatePortfolio(user, request.getSymbol(), request.getQuantity(), executionPrice , "SELL");
+
+
+            transactionService.createTransaction(
+                    user,
+                    request.getSymbol(),
+                    request.getQuantity(),
+                    executionPrice,
+                    TransactionType.SELL
+            );
+        }
+        OrderEntity order = new OrderEntity();
+        order.setUsers(user);
+        order.setSymbol(request.getSymbol());
+        order.setQuantity(request.getQuantity());
+        order.setOrderType(request.getOrderType());
+        order.setPrice(executionPrice);
+        order.setStatus(orderStatus);
+        order.setType(TransactionType.SELL);
+
+        OrderEntity savedOrder = orderRepository.save(order);
+
+        BuyOrderRequestDTO dto = modelMapper.map(savedOrder, BuyOrderRequestDTO.class);
+        dto.setStatus(savedOrder.getStatus());
+        return dto;
+    }
+
+    @Transactional
+    public BuyOrderRequestDTO buyStock(String username, BuyOrderRequestDTO request) {
+        if (request.getQuantity() <= 0)
+            throw new RuntimeException("Quantity must be greater than 0");
+        if ("LIMIT".equalsIgnoreCase(request.getOrderType()) && request.getPrice() <= 0)
+            throw new RuntimeException("Price must be greater than 0 for LIMIT orders");
+        UserEntity user = userRepository.findById(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        WalletEntity wallet = walletRepository.findById(username)
+                .orElseThrow(() -> new WalletNotFoundException("Wallet not found"));
+        StockResponseDTO stock = stockService.getStock(request.getSymbol(), "1d", "1m");
+        if (stock == null || stock.getMeta() == null)
+            throw new StockDataNotFoundException("Stock data unavailable");
+        double currentPrice = stock.getMeta().getPrice();
+        double executionPrice;
+        String orderStatus;
+        boolean marketOpen = marketTimeService.isMarketOpen();
+        if ("MARKET".equalsIgnoreCase(request.getOrderType())) {
+            if (marketOpen) orderStatus = "EXECUTED";
+            else orderStatus = "PENDING";
+            executionPrice = currentPrice;
+        }
+        else if ("LIMIT".equalsIgnoreCase(request.getOrderType())) {
             if (!marketOpen || currentPrice > request.getPrice()) {
                 orderStatus = "PENDING";
                 executionPrice = request.getPrice(); // reserve funds for pending
@@ -102,7 +174,7 @@ public class OrderService {
 
 
         if ("EXECUTED".equals(orderStatus)) {
-            updatePortfolio(user, request.getSymbol(), request.getQuantity(), executionPrice);
+            updatePortfolio(user, request.getSymbol(), request.getQuantity(), executionPrice , "BUY");
 
             transactionService.createTransaction(
                     user,
@@ -121,32 +193,44 @@ public class OrderService {
         order.setOrderType(request.getOrderType());
         order.setPrice(executionPrice);
         order.setStatus(orderStatus);
+        order.setType(TransactionType.BUY);
+
 
         OrderEntity savedOrder = orderRepository.save(order);
 
         BuyOrderRequestDTO dto = modelMapper.map(savedOrder, BuyOrderRequestDTO.class);
-        dto.setStatus(savedOrder.getStatus()); // Ensure status is returned to frontend
+        dto.setStatus(savedOrder.getStatus());
 
         return dto;
     }
 
-    public void updatePortfolio(UserEntity user, String stock, int qty, double price) {
+    public void updatePortfolio(UserEntity user, String stock, int qty, double price , String type) {
         PortfolioEntity portfolio = portfolioRepository.findByUserAndStockName(user, stock)
                 .orElse(null);
-
-        if (portfolio != null) {
-            int totalQty = portfolio.getQuantity() + qty;
-            double newAvg = ((portfolio.getAveragePrice() * portfolio.getQuantity()) + (price * qty)) / totalQty;
+        if("SELL".equalsIgnoreCase(type)){
+            int totalQty = portfolio.getQuantity() - qty;
+//            double newAvg = ((portfolio.getAveragePrice() * portfolio.getQuantity()) + (price * qty)) / totalQty;
             portfolio.setQuantity(totalQty);
-            portfolio.setAveragePrice((float) newAvg);
+
+//            portfolio.setAveragePrice((float) newAvg);
             portfolioRepository.save(portfolio);
-        } else {
-            PortfolioEntity newPortfolio = new PortfolioEntity();
-            newPortfolio.setUser(user);
-            newPortfolio.setStockName(stock);
-            newPortfolio.setQuantity(qty);
-            newPortfolio.setAveragePrice((float) price);
-            portfolioRepository.save(newPortfolio);
+            if(portfolio.getQuantity() == 0) portfolioRepository.delete(portfolio);
+        }
+        else {
+            if (portfolio != null) {
+                int totalQty = portfolio.getQuantity() + qty;
+                double newAvg = ((portfolio.getAveragePrice() * portfolio.getQuantity()) + (price * qty)) / totalQty;
+                portfolio.setQuantity(totalQty);
+                portfolio.setAveragePrice((float) newAvg);
+                portfolioRepository.save(portfolio);
+            } else {
+                PortfolioEntity newPortfolio = new PortfolioEntity();
+                newPortfolio.setUser(user);
+                newPortfolio.setStockName(stock);
+                newPortfolio.setQuantity(qty);
+                newPortfolio.setAveragePrice((float) price);
+                portfolioRepository.save(newPortfolio);
+            }
         }
     }
 
