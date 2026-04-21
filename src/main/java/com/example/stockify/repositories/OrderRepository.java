@@ -17,4 +17,6 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     long countByUsers_Username(String username);
 
     long countByUsers_UsernameAndStatus(String username, String status);
+
+    void deleteByUsersUsernameAndId(String username , Long id);
 }

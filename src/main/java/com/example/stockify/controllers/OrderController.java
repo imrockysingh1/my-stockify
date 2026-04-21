@@ -102,4 +102,28 @@ public class OrderController {
 
 
     }
+
+    @DeleteMapping("/delete-orders")
+    public ResponseEntity<ApiResponse<Void>> deleteStock(
+            @RequestParam String username ,
+            @RequestParam Long id
+    )throws AccessDeniedException{
+        String loggedInUser = (String) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if(!loggedInUser.equals(username))
+            throw new AccessDeniedException(("You are not Authenticated "));
+        orderService.deleteStocks(username,id);
+
+        ApiResponse<Void> response =
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .data(null)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
 }

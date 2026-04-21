@@ -6,6 +6,7 @@ import com.example.stockify.dto.StockResponseDTO;
 import com.example.stockify.entities.*;
 import com.example.stockify.enums.TransactionType;
 import com.example.stockify.exception.InsufficientBalanceException;
+import com.example.stockify.exception.ResourceNotFoundException;
 import com.example.stockify.exception.StockDataNotFoundException;
 import com.example.stockify.exception.WalletNotFoundException;
 import com.example.stockify.repositories.*;
@@ -273,5 +274,11 @@ public class OrderService {
                 .build();
 
 
+    }
+
+    @Transactional
+    public void deleteStocks(String username, Long id) {
+        orderRepository.findById(id).orElseThrow(() ->new ResourceNotFoundException("Orders not found"));
+        orderRepository.deleteByUsersUsernameAndId(username , id);
     }
 }

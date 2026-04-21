@@ -8,7 +8,7 @@ import lombok.Data;
 
 @Data
 public class BuyOrderRequestDTO {
-
+    private int id;
     private String symbol;
     private int quantity;
     private String orderType; // MARKET / LIMIT
