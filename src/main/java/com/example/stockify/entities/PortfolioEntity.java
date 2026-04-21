@@ -33,6 +33,9 @@ public class PortfolioEntity {
     @NotNull(message = "Quantity is required")
     private Integer quantity;
 
+    @Column(name = "reserved_quantity" , columnDefinition = "int default 0")
+    private Integer reservedQuantity = 0;
+
     @Column(name = "investment")
     @PositiveOrZero(message = "Investment cannot be negative")
     private Float investment;
@@ -40,7 +43,7 @@ public class PortfolioEntity {
     @PrePersist
     @PreUpdate
     public void calculateInvestment() {
-        if (averagePrice != null && quantity != null) {
+        if (averagePrice != null && quantity != null && quantity >= 0) {
             this.investment = averagePrice * quantity;
         }
     }
@@ -49,4 +52,7 @@ public class PortfolioEntity {
     @JoinColumn(name = "username", referencedColumnName = "username")
     private UserEntity user;
 
+    public int getAvailableQuantity() {
+        return quantity - (reservedQuantity == null ? 0 : reservedQuantity);
+    }
 }

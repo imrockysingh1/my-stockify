@@ -74,21 +74,21 @@ public class OrderService {
         boolean marketOpen = marketTimeService.isMarketOpen();
 
         if("MARKET".equalsIgnoreCase(request.getOrderType())){
-//            if(marketOpen)
-            if (true)
+            if(marketOpen)
+//            if (true)
                 orderStatus = "EXECUTED";
             else
                 orderStatus = "PENDING";
             executionPrice = currentPrice;
         }
         else if("LIMIT".equalsIgnoreCase(request.getOrderType())){
-            if(!marketOpen || currentPrice > request.getPrice()){
+            if(!marketOpen || currentPrice < request.getPrice()){
                 orderStatus = "PENDING";
                 executionPrice = request.getPrice();
             }
             else {
                 orderStatus ="EXECUTED";
-                executionPrice = Math.min(currentPrice , request.getPrice());
+                executionPrice = currentPrice;
             }
         }
         else{
@@ -96,15 +96,14 @@ public class OrderService {
         }
 
         double totalAmount = executionPrice*request.getQuantity();
-        if(portfolio.getQuantity() < request.getQuantity())
+        if(portfolio.getAvailableQuantity() < request.getQuantity())
             throw new InsufficientBalanceException("Less quantity available");
 
-        wallet.setAmount(wallet.getAmount() + totalAmount);
-        walletRepository.save(wallet);
 
         if ("EXECUTED".equals(orderStatus)) {
+            wallet.setAmount(wallet.getAmount() + totalAmount);
+            walletRepository.save(wallet);
             updatePortfolio(user, request.getSymbol(), request.getQuantity(), executionPrice , "SELL");
-
 
             transactionService.createTransaction(
                     user,
@@ -113,6 +112,10 @@ public class OrderService {
                     executionPrice,
                     TransactionType.SELL
             );
+        }
+        else if ("PENDING".equals(orderStatus)) {
+            portfolio.setReservedQuantity(portfolio.getReservedQuantity() + request.getQuantity());
+            portfolioRepository.save(portfolio);
         }
         OrderEntity order = new OrderEntity();
         order.setUsers(user);
@@ -208,13 +211,18 @@ public class OrderService {
         PortfolioEntity portfolio = portfolioRepository.findByUserAndStockName(user, stock)
                 .orElse(null);
         if("SELL".equalsIgnoreCase(type)){
+            if(portfolio == null) throw new RuntimeException("Portfolio not found");
             int totalQty = portfolio.getQuantity() - qty;
-//            double newAvg = ((portfolio.getAveragePrice() * portfolio.getQuantity()) + (price * qty)) / totalQty;
+            if (totalQty < 0)
+                throw new RuntimeException("Insufficient portfolio quantity");
+            if(portfolio.getReservedQuantity() != 0)
+                portfolio.setReservedQuantity(portfolio.getReservedQuantity() - qty);
             portfolio.setQuantity(totalQty);
-
-//            portfolio.setAveragePrice((float) newAvg);
-            portfolioRepository.save(portfolio);
-            if(portfolio.getQuantity() == 0) portfolioRepository.delete(portfolio);
+            if(totalQty == 0) {
+                portfolioRepository.delete(portfolio);
+            } else {
+                portfolioRepository.save(portfolio);
+            }
         }
         else {
             if (portfolio != null) {
@@ -243,8 +251,11 @@ public class OrderService {
         else if(orderType.equalsIgnoreCase("EXECUTED")){
             orders = orderRepository.findByUsersUsernameAndStatus(username,"EXECUTED");
         }
-        else{
+        else if(orderType.equalsIgnoreCase("PENDING")){
             orders = orderRepository.findByUsersUsernameAndStatus(username,"PENDING");
+        }
+        else{
+            orders = orderRepository.findByUsersUsernameAndStatus(username,"CANCELLED");
         }
         List<BuyOrderRequestDTO> ordersDTO =  orders.stream()
                 .map(order -> modelMapper.map(order, BuyOrderRequestDTO.class))

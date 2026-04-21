@@ -13,7 +13,8 @@ public class CorsConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOriginPatterns(
                         "https://mystockify.in",
-                        "https://www.mystockify.in"
+                        "https://www.mystockify.in",
+                        "http://localhost:3000/"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

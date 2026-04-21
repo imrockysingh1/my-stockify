@@ -20,4 +20,6 @@ public class ApiResponse<T> {
     private T data;
 
     private ApiError error;
+
+    private String message;
 }

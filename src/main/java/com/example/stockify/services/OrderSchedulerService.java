@@ -52,7 +52,7 @@ public class OrderSchedulerService {
         for (OrderEntity order : pendingOrders) {
 
             try {
-                if("BUY".equalsIgnoreCase(order.getOrderType())){
+                if(order.getType() == TransactionType.BUY){
                 double currentPrice = stockService
                         .getStock(order.getSymbol(), "1d", "1m")
                         .getMeta()
@@ -76,10 +76,9 @@ public class OrderSchedulerService {
 
                         // Add funds to wallet
                         double needed = totalAmount - wallet.getAmount();
-                        wallet.setAmount(wallet.getAmount() + needed + 1000); // optional extra buffer
-                        walletRepository.save(wallet);
-
-                        System.out.println("Wallet updated, new balance: " + wallet.getAmount());
+                        order.setStatus("CANCELLED");
+                        orderRepository.save(order);
+                        continue;
                     }
 
                     // Deduct money
@@ -92,7 +91,7 @@ public class OrderSchedulerService {
                             order.getSymbol(),
                             order.getQuantity(),
                             executionPrice,
-                            order.getOrderType()
+                            order.getType().name()
                     );
 
                     // Update order
@@ -116,8 +115,8 @@ public class OrderSchedulerService {
                             .getMeta()
                             .getPrice();
 
-                    // BUY condition
-                    if (currentPrice <= order.getPrice()) {
+                    // sell condition
+                    if (currentPrice >= order.getPrice()) {
                         System.out.println("currentPrice   -------------" + currentPrice);
                         System.out.println("Order price     -------------" + order.getPrice());
 
@@ -131,13 +130,24 @@ public class OrderSchedulerService {
                         wallet.setAmount(wallet.getAmount() + totalAmount);
                         walletRepository.save(wallet);
 
+                        PortfolioEntity portfolio = portfolioRepository
+                                .findByUserAndStockName(order.getUsers(), order.getSymbol())
+                                .orElse(null);
+
+                        if (portfolio == null || portfolio.getQuantity() < order.getQuantity()) {
+                            // portfolio doesn't exist or not enough stocks - cancel the order
+                            order.setStatus("CANCELLED");
+                            orderRepository.save(order);
+                            continue;
+                        }
+
                         // Update portfolio
                         orderService.updatePortfolio(
                                 order.getUsers(),
                                 order.getSymbol(),
                                 order.getQuantity(),
                                 executionPrice,
-                                order.getOrderType()
+                                order.getType().name()
                         );
                         order.setStatus("EXECUTED");
                         order.setPrice(executionPrice);
