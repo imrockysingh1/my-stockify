@@ -55,7 +55,7 @@ public class StockServiceController {
     public ResponseEntity<ApiResponse<StockResponseDTO>> getIndex(
             @PathVariable String symbol,
             @RequestParam(required = false , defaultValue = "1d") String range,
-            @RequestParam(required = false , defaultValue = "1m") String interval
+            @RequestParam(required = false , defaultValue = "1d") String interval
     ){
         String mappedSymbol = SYMBOL_MAP.get(symbol.toLowerCase());
 
