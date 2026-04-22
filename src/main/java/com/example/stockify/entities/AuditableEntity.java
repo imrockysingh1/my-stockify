@@ -21,7 +21,6 @@ public class AuditableEntity {
 
     @CreatedDate
     @Column(name = "created_date" ,
-            nullable = false ,
             updatable = false)
     private LocalDateTime createdDate;
 
@@ -37,3 +36,4 @@ public class AuditableEntity {
     @Column(name = "updated_by")
     private String updatedBy;
 }
+
