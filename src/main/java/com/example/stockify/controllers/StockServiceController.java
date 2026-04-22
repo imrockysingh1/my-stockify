@@ -17,12 +17,12 @@ public class StockServiceController {
     private static final Map<String, String> SYMBOL_MAP = Map.of(
             "nifty50", "NSEI",
             "bank-nifty", "NSEBANK",
-            "finnifty", "NSEFIN",
+            "finnifty", "CNXFIN",
             "nifty-it", "CNXIT",
             "nifty-midcap-50", "NSEMDCP50",
-            "nifty-smallcap", "CNXSMLCAP",
+            "nifty-smallcap", "CNXSC",
             "sensex-bse", "BSESN",
-            "india-vix", "INDIAVIX"
+            "india-vix", "VIX"
     );
 
     private final StockService stockService;
