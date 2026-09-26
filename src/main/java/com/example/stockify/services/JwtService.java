@@ -18,9 +18,7 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    // ==============================
-    // 🔹 Generate Token
-    // ==============================
+
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
@@ -30,31 +28,33 @@ public class JwtService {
                 .compact();
     }
 
-    // ==============================
-    // 🔹 Extract Username
-    // ==============================
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // ==============================
-    // 🔹 Validate Token
-    // ==============================
     public boolean isTokenValid(String token, String username) {
         final String extractedUsername = extractUsername(token);
         return extractedUsername.equals(username) && !isTokenExpired(token);
     }
 
-    // ==============================
-    // 🔹 Check Expiration
-    // ==============================
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+
+//    public boolean isTokenExpired(String token) {
+//        return extractClaim(token, Claims::getExpiration).before(new Date());
+//    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            Date expiration =
+                    extractClaim(token, Claims::getExpiration);
+
+            return expiration.before(new Date());
+
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            System.out.println(e);
+            return true;
+        }
     }
 
-    // ==============================
-    // 🔹 Extract Any Claim
-    // ==============================
     private <T> T extractClaim(String token, Function<Claims, T> resolver) {
         final Claims claims = Jwts.parser()
                 .setSigningKey(secretKey.getBytes())

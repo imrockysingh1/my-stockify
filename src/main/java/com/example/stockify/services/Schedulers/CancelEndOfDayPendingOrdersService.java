@@ -1,4 +1,4 @@
-package com.example.stockify.services;
+package com.example.stockify.services.Schedulers;
 
 import com.example.stockify.entities.OrderEntity;
 import com.example.stockify.entities.PortfolioEntity;

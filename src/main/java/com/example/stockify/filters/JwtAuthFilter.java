@@ -50,7 +50,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
 
             } catch (Exception e) {
-                // invalid token → Spring will handle (403)
+                System.out.println("JWT ERROR:");
+                e.printStackTrace();
             }
         }
 

@@ -1,13 +1,16 @@
-package com.example.stockify.services;
+package com.example.stockify.services.Schedulers;
 
 import com.example.stockify.entities.OrderEntity;
 import com.example.stockify.entities.PortfolioEntity;
 import com.example.stockify.entities.WalletEntity;
 import com.example.stockify.enums.TransactionType;
-import com.example.stockify.exception.InsufficientBalanceException;
 import com.example.stockify.repositories.OrderRepository;
 import com.example.stockify.repositories.PortfolioRepository;
 import com.example.stockify.repositories.WalletRepository;
+import com.example.stockify.services.MarketTimeService;
+import com.example.stockify.services.OrderService;
+import com.example.stockify.services.StockService;
+import com.example.stockify.services.TransactionService;
 import jakarta.transaction.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -46,7 +49,6 @@ public class OrderSchedulerService {
         if (!marketTimeService.isMarketOpen()) {
             return;
         }
-
         List<OrderEntity> pendingOrders = orderRepository.findByStatus("PENDING");
 
         for (OrderEntity order : pendingOrders) {

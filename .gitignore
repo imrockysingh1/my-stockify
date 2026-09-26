@@ -32,4 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 src/main/resources/application.properties
+
