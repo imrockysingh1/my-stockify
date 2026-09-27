@@ -33,7 +33,7 @@ public class LogoutController {
         LogoutResponseDTO user = authTokenRepository.findLogoutDetailsByToken(authToken.substring(7))
                         .orElseThrow(()-> new ResourceNotFoundException("Token not found"));
 
-        if(user.getUsername() != username){
+        if(!user.getUsername().equals(username)){
             ResponseEntity
                     .badRequest()
                     .body("Unauthorized");

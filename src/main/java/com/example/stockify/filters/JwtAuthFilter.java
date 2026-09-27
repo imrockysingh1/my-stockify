@@ -1,5 +1,7 @@
 package com.example.stockify.filters;
 
+import com.example.stockify.entities.AuthTokenEntity;
+import com.example.stockify.repositories.AuthTokenRepository;
 import com.example.stockify.services.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,41 +19,77 @@ import java.util.Collections;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final AuthTokenRepository authTokenRepository;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(
+            JwtService jwtService,
+            AuthTokenRepository authTokenRepository
+    ) {
         this.jwtService = jwtService;
+        this.authTokenRepository = authTokenRepository;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
+
             String token = authHeader.substring(7);
 
             try {
+
                 String username = jwtService.extractUsername(token);
 
                 if (username != null &&
                         SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                    UsernamePasswordAuthenticationToken authToken =
+                    AuthTokenEntity authTokenEntity =
+                            authTokenRepository
+                                    .findByTokenAndIsExpiredFalse(token)
+                                    .orElse(null);
+
+                    if (authTokenEntity == null) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write("Token expired or logged out");
+                        return;
+                    }
+
+                    if (jwtService.isTokenExpired(token)) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write("Token expired");
+                        return;
+                    }
+
+                    if (!username.equals(
+                            authTokenEntity.getUser().getUsername())) {
+
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write("Unauthorized");
+                        return;
+                    }
+
+                    UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     username,
                                     null,
                                     Collections.emptyList()
                             );
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authentication);
                 }
 
             } catch (Exception e) {
-                System.out.println("JWT ERROR:");
-                e.printStackTrace();
+
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid token");
+                return;
             }
         }
 
